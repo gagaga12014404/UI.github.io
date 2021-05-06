@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title></title>
+    <link rel="stylesheet" href="style.css">
+    <script src="jquery./jquery-3.4.1.min.js"></script>
+    <!--引用腳本-->
+    <script type="text/javascript" src="d3/d3.js"></script>
+    <!--直接引用D3
+    <script src="https://d3js.org/d3.v5.min.js"></script>
+    -->
+    <script src="svg./snap.svg-min.js"></script> <!-- 有使用到 Snap.path.toCubic() -->
+    <script src="svg./svg.min.js"></script>
+    <script src="svg./svg.draggable.min.js"></script>
+
+
+</head>
+
+<body>
+    <div class="top">
+        <!--type="file"是選擇檔案,利用onchange建立js function-->
+        <input type="file" onchange="showImg(this)" class="file">
+    </div>
+    <div class="tool">
+        <span class="tool2">
+            <select id="shape" style="margin:7px;font-size: 20px;height: 30px;">
+                　<option value="ellipse">圓</option>
+                　<option value="rect">方</option>
+            </select>
+            <button onclick="newPoint1()">新筆畫</button>
+            <button onclick="newPoint2()">延伸筆畫</button>
+            <button onclick="removePoint()">刪除點</button>
+            <span style="margin:10px;">|</span>
+            <span style="font-size:20px;">
+                寬:
+                <input type="number" id="width">
+                高:
+                <input type="number" id="height">
+                旋轉:
+                <input type="number" id="rotate">
+            </span>
+
+        </span>
+
+
+    </div>
+    <table border=1 style="margin:7px;">
+        <tr>
+            <th id="pic" class="table1">
+                <!--<img id="showimg" src="" style="display:none;width: 720px;height: 720px;">
+                新增點的區域-->
+                <svg id="svgimage"></svg>
+            </th>
+            <th id="metafont" class="table1">
+                <!--
+                <textarea id="content">
+                                mode_setup;
+                                beginchar ("B", 10pt#, 10pt#, 0);
+                            
+                </textarea>
+                -->
+
+
+            </th>
+        </tr>
+    </table>
+    <button style="margin:7px;" onclick="confirm1()">確認</button>
+    <button onclick="save()">儲存</button>
+    <script>
+
+        //rotate問題
+        //https://stackoverflow.com/questions/34616788/svg-js-rotating-element-rotates-whole-coordinate-system
+        //新增svg的畫板
+        var image_width = 500;
+        var image_height = 500;
+        var image = SVG('svgimage').size(image_width, image_height);
+        var group = image.group();
+        var isImage = false;//有沒有圖片
+        //把圖片讀到svg的畫板
+        function showImg(input) {
+            if (!isImage) {
+                var file = input.files[0];
+                var reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = function () {
+                    image.image(reader.result).size(image_width, image_height);
+                }
+
+                isImage = true;
+            }
+
+            //document.getElementById("SvgjsImage1007").id='-1';
+        }
+
+
+
+        var ellipse;
+        var rect;
+        var new_point = [];
+        var new_line = [];
+        var count_line = 0;
+        var circle_id_array = [];
+        var square_id_array = [];
+        var count_point = 1;
+        var color = ["red", "orange", "yellow", "green", "blue", "indigo", "purple"];
+        var color2 = ["pink", "Aqua", "Brown", "Chartreuse", "DarkCyan", "DarkGoldenRod", "Gold"];
+        var isClick;//誰被點
+        var whichArray = 0;//(isClick/10)-1
+        var txt = document.getElementById("metafont");
+        //新筆畫
+        function newPoint1() {
+            if (isClick != undefined) {
+                if (document.getElementById("shape").value == "ellipse") {
+                    var cx = document.getElementById(isClick).cx.animVal.value;
+                    var cy = document.getElementById(isClick).cy.animVal.value;
+                    var rx = document.getElementById(isClick).rx.animVal.value;
+                    var ry = document.getElementById(isClick).ry.animVal.value;
+                }
+                else if (document.getElementById("shape").value == "rect") {
+                    var x = document.getElementById(isClick).x.animVal.value;
+                    var y = document.getElementById(isClick).y.animVal.value;
+                    var width1 = document.getElementById(isClick).width.animVal.value;//寬度
+                    var height1 = document.getElementById(isClick).height.animVal.value;
+                }
+            }
+            else{
+                if (document.getElementById("shape").value == "ellipse") {
+                    var cx = 10;
+                    var cy = 20;
+                    var rx = 10;
+                    var ry = 10;
+                }
+                else if (document.getElementById("shape").value == "rect") {
+                    var x = 10;
+                    var y = 20;
+                    var width1 = 20;
+                    var height1 = 20;
+                }
+            }
+            //ellipse = image.ellipse(20,20).fill('red').stroke('green').move(10 * (countPoint+1), 10 * (countPoint+1)).draggable();
+            if (document.getElementById("shape").value == "ellipse") {
+                new_line.push([ellipse]);
+                new_line[count_line][0] = image.ellipse(rx*2, ry*2).fill(color[count_line % 7]).stroke(color2[parseInt(count_line / 7)]).move(10+cx, cy).draggable();
+            }
+            else if (document.getElementById("shape").value == "rect") {
+                new_line.push([rect]);
+                new_line[count_line][0] = image.rect(width1, height1).fill(color[count_line % 7]).stroke(color2[parseInt(count_line / 7)]).move(10+x, y).draggable();
+            }
+            id = String(count_line + 1) + '0';
+
+            isClick = id;
+            new_line[count_line][0].id(id);//設定id
+            new_line[count_line][0].attr('rotate', 0);//設定rotate屬性
+            new_line[count_line][0].attr('whichArray', count_line);//設定是第幾個array
+            if (document.getElementById("shape").value == "ellipse") {
+                circle_id_array.push(id);
+            }
+            else if (document.getElementById("shape").value == "rect") {
+                square_id_array.push(id);
+            }
+
+            document.getElementById("width").value = 20;
+            document.getElementById("height").value = 20;
+            document.getElementById(id).addEventListener("mouseup", function () {
+                isClick = this.id;
+                console.log(isClick);
+            });
+            count_line += 1;
+            console.log(new_line);
+            count_point = 1;
+            /*查document.getelementbyid的所有屬性*/
+            /*var obj = document.getElementById(id).attributes, array1 = Array.prototype.slice.call(obj);
+            console.log(array1);*/
+        }
+        //新點
+
+        function newPoint2() {
+            if (isClick != undefined) {
+                whichArray = parseInt(document.getElementById(isClick).attributes.whichArray.value);
+
+                count_point = new_line[whichArray].length;
+                if (new_line[whichArray][0].type == "ellipse") {
+                    var clone = new_line[whichArray][0].clone();//直接複製一模一樣的圖案
+                    var cx = document.getElementById(isClick).cx.animVal.value;
+                    var cy = document.getElementById(isClick).cy.animVal.value;
+                    clone.move(10 + cx, cy).draggable();
+                    new_line[whichArray].push(clone);
+                    /*
+                                        var cx = document.getElementById(isClick).cx.animVal.value;
+                                        var cy = document.getElementById(isClick).cy.animVal.value;
+                                        var rx = document.getElementById(isClick).rx.animVal.value;
+                                        var ry = document.getElementById(isClick).ry.animVal.value;
+                                        new_line[whichArray].push(ellipse);
+                                        new_line[whichArray][count_point] = image.ellipse(rx * 2, ry * 2).fill('red').stroke('green').move(20 + cx, 20 * (whichArray) + cy).draggable();
+                    */
+                }
+                else if (new_line[whichArray][0].type == "rect") {
+                    var clone = new_line[whichArray][0].clone();
+                    var x = document.getElementById(isClick).x.animVal.value;
+                    var y = document.getElementById(isClick).y.animVal.value;
+                    clone.move(10 + x, y).draggable();
+                    new_line[whichArray].push(clone);
+                    /*
+                    var x = document.getElementById(isClick).x.animVal.value;//位置
+                    var y = document.getElementById(isClick).y.animVal.value;
+                    var width1 = document.getElementById(isClick).width.animVal.value;//寬度
+                    var height1 = document.getElementById(isClick).height.animVal.value;
+                    new_line[whichArray].push(rect);
+                    new_line[whichArray][count_point] = image.rect(width1, height1).fill('red').stroke('green').move(20 + x, 20 * (whichArray) + y).draggable();
+                */
+                }
+
+                //document.getElementById("width").value = 50;
+                id = String(whichArray + 1) + String(count_point);
+                isClick = id;
+                new_line[whichArray][count_point].id(id);//設定id
+                if (new_line[whichArray][0].type == "ellipse") {
+                    circle_id_array.push(id);
+                }
+                else if (new_line[whichArray][0].type == "rect") {
+                    square_id_array.push(id);
+                }
+                document.getElementById(id).addEventListener("mouseup", function () {
+                    isClick = this.id;
+                    console.log(isClick);
+                });
+
+                count_point += 1;
+                console.log(new_line);
+            }
+        }
+        //刪除點
+        function removePoint() {
+            if (isClick != undefined) {
+                whichArray = parseInt(document.getElementById(isClick).attributes.whichArray.value);
+
+                if (new_line[whichArray].length == 1) {
+                    isClick = undefined;
+                }
+                else {
+                    isClick -= 1;
+                }
+                if (new_line[whichArray].length >= 1) {
+                    new_line[whichArray][new_line[whichArray].length - 1].remove();
+                    new_line[whichArray].pop();
+                    console.log("remove");
+                }
+            }
+        }
+        function confirm1() {
+            /*var fso=new ActiveXObject(Scripting.FileSystemObject);
+            var f=fso.createtextfile(".\a.txt",2,true);
+            f.writeLine("123");
+            f.close();*/
+            //var size = prompt('請輸入文字大小');
+            var output = "";
+            output += "mode_setup;" + '\n' + "beginchar (" + '"B"' + ", 10pt#, 10pt#, 0);\n% define points\n";
+            /*for (var i = 0; i < circle_id_array.length; i++) {
+                var cx = document.getElementById(circle_id_array[i]).cx.animVal.value / 720;
+                var cy = document.getElementById(circle_id_array[i]).cy.animVal.value / 720;
+                output += 'x' + String(circle_id_array[i]) + '=' + String((cx).toFixed(2)) + 'w;y' + String(circle_id_array[i]) + '=' + String((1 - cy).toFixed(2)) + 'h;\n';
+                output += "% define pen\npickup pencircle xscaled 0.04w yscaled 0.06w rotated 30;\n";
+
+            }
+            output += "% define pen\npickup pencircle xscaled 0.04w yscaled 0.06w rotated 30;\n";
+            for (var i = 0; i < square_id_array.length; i++) {
+                var cx = document.getElementById(square_id_array[i]).x.animVal.value / 720;
+                var cy = document.getElementById(square_id_array[i]).y.animVal.value / 720;
+                output += 'x' + String(square_id_array[i]) + '=' + String((cx).toFixed(2)) + 'w;y' + String(square_id_array[i]) + '=' + String((1 - cy).toFixed(2)) + 'h;\n';
+
+            }
+            output += "% define pen\npickup pensquare xscaled 0.04w yscaled 0.06w rotated 30;\n";*/
+            for (var i = 0; i < new_line.length; i++) {
+                for (var j = 0; j < new_line[i].length; j++) {
+                    if (j == 0) {//只做第一次
+                        for (var k = 0; k < new_line[i].length; k++) {
+                            if (new_line[i][k].type == "ellipse") {
+                                var cx = document.getElementById(new_line[i][k]).cx.animVal.value / image_width;
+                                var cy = document.getElementById(new_line[i][k]).cy.animVal.value / image_height;
+                                output += 'x' + String(new_line[i][k]) + '=' + String((cx).toFixed(2)) + 'w;y' + String(new_line[i][k]) + '=' + String((1 - cy).toFixed(2)) + 'h;\n';
+                            }
+                            else if (new_line[i][k].type == "rect") {
+                                var x = document.getElementById(new_line[i][k]).x.animVal.value / image_width;
+                                var y = document.getElementById(new_line[i][k]).y.animVal.value / image_height;
+                                output += 'x' + String(new_line[i][k]) + '=' + String((x).toFixed(2)) + 'w;y' + String(new_line[i][k]) + '=' + String((1 - y).toFixed(2)) + 'h;\n';
+                            }
+                        }
+                    }
+                    if (j == 0) {
+                        output += "% define pen\npickup pen";
+                        if (new_line[i][j].type == "ellipse") {
+                            output += "circle ";
+                            output += "xscaled ";
+                            output += String(new_line[i][j].node.rx.animVal.value);
+                            output += " yscaled ";
+                            output += String(new_line[i][j].node.ry.animVal.value);
+                            output += " rotated ";
+                            output += String(360 - new_line[i][j].attr('rotate'));
+                            output += ';\n';
+                        }
+                        else if (new_line[i][j].type == "rect") {
+                            output += "square ";
+                            output += "xscaled ";
+                            output += String(new_line[i][j].node.width.animVal.value/2);
+                            output += " yscaled ";
+                            output += String(new_line[i][j].node.height.animVal.value/2);
+                            output += " rotated ";
+                            output += String(360 - new_line[i][j].attr('rotate'));
+                            output += ';\n';
+                        }
+
+                    }
+                    if (j == 0) {
+                        output += "draw ";
+                    }
+                    output += 'z' + new_line[i][j].node.id;
+                    if (j != new_line[i].length - 1) {
+                        output += "..";
+                    }
+                    if (j == new_line[i].length - 1) {
+                        output += ';\n';
+                    }
+                }
+            }
+            output += "endchar;\nend";
+            document.getElementById("metafont").innerText = output;
+
+        }
+
+        function save() {
+        }
+        function Start() {
+
+
+            if (isClick != undefined) {
+                whichArray = parseInt(document.getElementById(isClick).attributes.whichArray.value);
+                if (new_line[whichArray][0].type == "ellipse") {
+                    for (var i = 0; i < new_line[whichArray].length; i++) {
+                        new_line[whichArray][i].node.rx.baseVal.value = document.getElementById("width").value / 2;
+                        new_line[whichArray][i].node.ry.baseVal.value = document.getElementById("height").value / 2;
+                        new_line[whichArray][i].rotate(document.getElementById("rotate").value);
+                        new_line[whichArray][i].attr('rotate', document.getElementById("rotate").value);
+                    }
+                }
+                else if (new_line[whichArray][0].type == "rect") {
+                    for (var i = 0; i < new_line[whichArray].length; i++) {
+                        new_line[whichArray][i].node.width.baseVal.value = document.getElementById("width").value;
+                        new_line[whichArray][i].node.height.baseVal.value = document.getElementById("height").value;
+                        new_line[whichArray][i].rotate(document.getElementById("rotate").value);
+                        new_line[whichArray][i].attr('rotate', document.getElementById("rotate").value);
+                    }
+                }
+            }
+
+
+            /*
+            var who_isClick = new_line[parseInt(isClick / 10) - 1][isClick % 10];//有時候用getid有時候用new_line
+
+            if (who_isClick.type == "ellipse") {
+                document.getElementById(isClick).rx.baseVal.value = document.getElementById("width").value / 2;
+                document.getElementById(isClick).ry.baseVal.value = document.getElementById("height").value / 2;
+            }
+            else if (who_isClick.type == "rect") {
+                document.getElementById(isClick).width.baseVal.value = document.getElementById("width").value;
+                document.getElementById(isClick).height.baseVal.value = document.getElementById("height").value;
+
+            }
+            who_isClick.rotate(document.getElementById("rotate").value);
+            */
+
+
+            //歪的角度，js跟metafont正負相反
+        }
+        window.addEventListener("change", Start, false);
+
+        function mouseup1() {
+
+
+            if (isClick != undefined) {
+                whichArray = parseInt(document.getElementById(isClick).attributes.whichArray.value);
+                if (new_line[whichArray][0].type == "ellipse") {
+                    document.getElementById("width").value = new_line[whichArray][0].node.rx.animVal.value * 2;
+                    document.getElementById("height").value = new_line[whichArray][0].node.ry.animVal.value * 2;
+                    document.getElementById("rotate").value = new_line[whichArray][0].attr('rotate');
+                }
+                else if (new_line[whichArray][0].type == "rect") {
+                    document.getElementById("width").value = new_line[whichArray][0].node.width.animVal.value;
+                    document.getElementById("height").value = new_line[whichArray][0].node.height.animVal.value;
+                    document.getElementById("rotate").value = new_line[whichArray][0].attr('rotate');
+                }
+            }
+        }
+        window.addEventListener("click", mouseup1, false);
+        //addlistener
+        /*
+        function Start(e) {
+
+            circle_id_array.forEach(function (i) {
+                document.getElementById(i).addEventListener("mouseup", function () {
+                    isClick = i;
+                    console.log(isClick);
+                });
+            });
+        }*/
+
+
+
+        //document.getElementById("svgimage").addEventListener("mouseup",Start,false)
+        /*
+        function Start(e) {
+            circle_id_array.forEach(function (i) {
+                document.getElementById(i).addEventListener("mouseup", function () {
+                    isClick = i;
+                    console.log(isClick);
+                });
+            });
+        }
+
+        window.addEventListener("mouseup", Start, false);
+        */
+
+        //寫入txt
+
+        /*
+                function clickFunction() {
+                    console.log(this.cx.animVal.value);
+                }
+                */
+
+    </script>
+
+</body>
+
+</html>

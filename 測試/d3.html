@@ -1,0 +1,47 @@
+
+        /*D3*/
+
+        /*
+        let point = [];
+        let svg = d3
+            .select("#svgimage")
+            .append("svg")
+            .attr("width", 500)
+            .attr("height", 500);
+        var drag = d3.behavior.drag()
+            .on('dragstart', function () {
+                console.log(d3.event);
+            })
+            .on('drag', function () {
+                console.log(d3.event);
+            })
+            .on('dragend', function () {
+                console.log(d3.event);
+            });
+        function draw() {
+            let circle = d3.select("svg").selectAll("circle").call(drag);
+
+            let update = circle.data(point);
+            let enter = update.enter();
+            let exit = update.exit();
+
+            update
+                .attr("cx", function (d, i) {
+                    return (i + 1) * 100;
+                })
+                .attr("cy", 100)
+                .attr("r", 20)
+                .style("fill", "red");
+
+            enter
+                .append("circle")
+                .attr("cx", function (d, i) {
+                    return (i + 1) * 100;
+                })
+                .attr("cy", 100)
+                .attr("r", 20)
+                .style("fill", "red");
+
+            exit.remove();
+
+        }

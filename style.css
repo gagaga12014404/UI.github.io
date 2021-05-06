@@ -1,0 +1,45 @@
+
+.table1 {
+    width: 500px;
+    height: 500px;
+
+}
+body{
+    padding: 0;
+    margin: 0;
+    background-color: rgb(73, 73, 73);
+    color: white;
+
+}
+
+.top{
+    padding: 0;
+    margin: 0;
+    width: auto;
+    height: 40px;
+    background-color: rgb(105, 105, 105);
+
+}
+.file{
+    margin: 7px;
+}
+.tool{
+    width: auto;
+    height: 55px;
+    background-color: rgb(88, 88, 88);
+}
+button{
+    background-color: rgb(88, 88, 88);
+    font-size: 20px;
+    color: white;
+    border:1.5px solid white;
+    
+    margin-top:7px;
+}
+.tool2{
+}
+.left{
+    width: 20px;
+    height: auto;
+    background-color: beige;
+}
